@@ -1,0 +1,5 @@
+# logfind settings go here
+
+./sample-logs/error.log
+./sample-logs/warning.log
+./sample-logs/info.log
