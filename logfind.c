@@ -73,6 +73,33 @@ int SplitLines(FILE* fstream, int lineCount, char*** splitLines)
     return 1;
 }
 
+int RemoveLineReturn(char* input, char* output)
+{
+    char* inputCopy = malloc(strlen(input) + 1);
+    check_mem(inputCopy);
+
+    strcpy(inputCopy, input);
+
+    char* stripped = strsep(&inputCopy, "\n");
+
+    strcpy(output, stripped);
+
+    free(stripped);
+    return 1;
+
+    error:
+        return -1;
+}
+
+int printFile(FILE* fstream)
+{
+    char firstLine[256];
+    fgets(firstLine, 256, fstream);
+    printf("%s\n", firstLine);
+    rewind(fstream);
+    return 1;
+}
+
 int main(int argc, char* argv[])
 {
     FILE* fstream = fopen(".logfind", "r");
@@ -84,15 +111,37 @@ int main(int argc, char* argv[])
     char line[256];
     int cnt = 0;
 
+
     while(fgets(line, 256, fstream ))
     {
         if (CommentCheck(line) == 0 && BlankLineCheck(line) == 0)
         {
-            printf("%d: %s", cnt, line);
+            //printf("%d: %s", cnt, line);
+            if(1)
+            {
+                // strip out carrage return
+                char* raw = malloc(strlen(line) + 1);
+                check_debug(raw, "raw not created");
+                char* stripped = malloc(strlen(line) + 1);
+                check_debug(stripped, "stripped not created");
+
+                strcpy(raw, line);
+                RemoveLineReturn(raw, stripped);
+                
+                FILE* logStream = fopen(stripped, "r");
+                check_debug(logStream, "logStream not opened")
+                printf("title: %s\n", stripped);
+                printFile(logStream);
+
+                fclose(logStream);
+                free(raw);
+                free(stripped);
+            }
+            
+            
             cnt++;
         }
     }
-    printf("\n");
 
     fclose(fstream);
     return 0;
