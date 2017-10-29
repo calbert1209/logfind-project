@@ -72,6 +72,29 @@ int RemoveLineReturn(char* input, char* output)
         return -1;
 }
 
+char** ParseLines(FILE* fstream int* lineCount)
+{
+    // buffer for line
+    char buffer[256];
+    // initial line count
+    *lineCount = countlines(fstream);
+    // char** on heap with space for ptrs to each line
+    char** lineList = malloc((*linecount) * sizeof(char*));
+    // loop through file stream
+    int i = 0;
+    
+    while(fgets(buffer, 256, fstream))
+    {
+        // duplicate line on heap
+        char* lineOnHeap = strdup(buffer);
+        // push ptr to duplicate to ptr list on heap at index i
+        lineList[i] = lineOnHeap;
+    }
+
+    rewind(fstream);
+    return lineList;
+}
+
 int printFile(FILE* fstream)
 {
     char firstLine[LINEMAX];
@@ -103,13 +126,12 @@ int main(int argc, char* argv[])
         if (CommentCheck(line) == 0 && BlankLineCheck(line) == 0)
         {
             strcpy(rawLine, line);
-            // char* stripped = malloc(LINEMAX);
-            // check_debug(stripped, "stripped not created");
 
             RemoveLineReturn(rawLine, logFilePath);
             
             FILE* logStream = fopen(logFilePath, "r");
             check_debug(logStream, "logStream not opened")
+
             printf("title: %s\n", logFilePath);
             printFile(logStream);
 
