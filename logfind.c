@@ -5,6 +5,8 @@
 #include <errno.h>
 #include "dbg.h"
 
+const int LINEMAX = 256;
+
 int countlines(FILE* fstream)
 {
     int ch = 0;
@@ -54,32 +56,11 @@ int BlankLineCheck(char* line)
     return 1;
 }
 
-int SplitLines(FILE* fstream, int lineCount, char*** splitLines)
-{
-    char** lineptrs = malloc(sizeof(char*) * lineCount);
-
-    char* current = NULL;
-    int i = 0;
-
-    while(fgets(current, 256, fstream))
-    {
-        lineptrs[i] = current;
-        i++;
-    }
-
-    // the pointers collected in lineptrs point to memory on the stack...
-    // memory that is gonzo when the block completes. try again...
-    splitLines = &lineptrs;
-    return 1;
-}
-
 int RemoveLineReturn(char* input, char* output)
 {
-    char* inputCopy = malloc(strlen(input) + 1);
+    char* inputCopy = strdup(input);
     check_mem(inputCopy);
-
-    strcpy(inputCopy, input);
-
+    
     char* stripped = strsep(&inputCopy, "\n");
 
     strcpy(output, stripped);
@@ -93,8 +74,8 @@ int RemoveLineReturn(char* input, char* output)
 
 int printFile(FILE* fstream)
 {
-    char firstLine[256];
-    fgets(firstLine, 256, fstream);
+    char firstLine[LINEMAX];
+    fgets(firstLine, LINEMAX, fstream);
     printf("%s\n", firstLine);
     rewind(fstream);
     return 1;
@@ -108,42 +89,40 @@ int main(int argc, char* argv[])
     int lineCount = countlines(fstream);
     log_info("number of lines: %d", lineCount);
 
-    char line[256];
+    char* line = malloc(LINEMAX);
+    check_debug(line, "line not allocated");
     int cnt = 0;
 
+    char* rawLine = malloc(LINEMAX);
+    check_debug(rawLine, "rawLine note created");
 
-    while(fgets(line, 256, fstream ))
+    char* logFilePath = malloc(LINEMAX);
+
+    while(fgets(line, LINEMAX, fstream ))
     {
         if (CommentCheck(line) == 0 && BlankLineCheck(line) == 0)
         {
-            //printf("%d: %s", cnt, line);
-            if(1)
-            {
-                // strip out carrage return
-                char* raw = malloc(strlen(line) + 1);
-                check_debug(raw, "raw not created");
-                char* stripped = malloc(strlen(line) + 1);
-                check_debug(stripped, "stripped not created");
+            strcpy(rawLine, line);
+            // char* stripped = malloc(LINEMAX);
+            // check_debug(stripped, "stripped not created");
 
-                strcpy(raw, line);
-                RemoveLineReturn(raw, stripped);
-                
-                FILE* logStream = fopen(stripped, "r");
-                check_debug(logStream, "logStream not opened")
-                printf("title: %s\n", stripped);
-                printFile(logStream);
-
-                fclose(logStream);
-                free(raw);
-                free(stripped);
-            }
+            RemoveLineReturn(rawLine, logFilePath);
             
+            FILE* logStream = fopen(logFilePath, "r");
+            check_debug(logStream, "logStream not opened")
+            printf("title: %s\n", logFilePath);
+            printFile(logStream);
+
+            fclose(logStream);
             
             cnt++;
         }
     }
-
+    
+    free(rawLine);
+    free(logFilePath);
     fclose(fstream);
+    free(line);
     return 0;
 
     error:
