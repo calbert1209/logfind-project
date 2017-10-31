@@ -72,14 +72,14 @@ int RemoveLineReturn(char* input, char* output)
         return -1;
 }
 
-char** ParseLines(FILE* fstream int* lineCount)
+char** ParseLines(FILE* fstream, int* lineCount)
 {
     // buffer for line
     char buffer[256];
     // initial line count
     *lineCount = countlines(fstream);
     // char** on heap with space for ptrs to each line
-    char** lineList = malloc((*linecount) * sizeof(char*));
+    char** lineList = malloc((*lineCount) * sizeof(char*));
     // loop through file stream
     int i = 0;
     
