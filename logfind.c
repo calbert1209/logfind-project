@@ -2,12 +2,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <sys/types.h>
+#include <regex.h>
 #include <errno.h>
 #include "dbg.h"
 
 const int LINEMAX = 256;
 
-int countlines(FILE* fstream)
+int CountLines(FILE* fstream)
 {
     int ch = 0;
     int count = 0;
@@ -51,6 +53,7 @@ int BlankLineCheck(char* line)
         {
             return 0;
         }
+        i++;
     }
 
     return 1;
@@ -72,29 +75,6 @@ int RemoveLineReturn(char* input, char* output)
         return -1;
 }
 
-char** ParseLines(FILE* fstream, int* lineCount)
-{
-    // buffer for line
-    char buffer[256];
-    // initial line count
-    *lineCount = countlines(fstream);
-    // char** on heap with space for ptrs to each line
-    char** lineList = malloc((*lineCount) * sizeof(char*));
-    // loop through file stream
-    int i = 0;
-    
-    while(fgets(buffer, 256, fstream))
-    {
-        // duplicate line on heap
-        char* lineOnHeap = strdup(buffer);
-        // push ptr to duplicate to ptr list on heap at index i
-        lineList[i] = lineOnHeap;
-    }
-
-    rewind(fstream);
-    return lineList;
-}
-
 int printFile(FILE* fstream)
 {
     char firstLine[LINEMAX];
@@ -104,12 +84,42 @@ int printFile(FILE* fstream)
     return 1;
 }
 
+int PrintMatches(FILE* stream, regex_t* regex)
+{
+    char lineBuffer[LINEMAX];
+    char msgBuffer[100];
+    while(fgets(lineBuffer, LINEMAX, stream))
+    {
+        int matchResult = regexec(regex, lineBuffer, 0, NULL, 0);
+        if(!matchResult)
+        {
+            printf("match: %s", lineBuffer);
+        }
+        else if (matchResult == REG_NOMATCH)
+        {
+
+        }
+        else
+        {
+            regerror(matchResult, regex, msgBuffer, sizeof(msgBuffer));
+            printf("regex failed: %s\n", msgBuffer);
+        }
+    }
+    rewind(stream);
+    return 1;
+}
+
 int main(int argc, char* argv[])
 {
+    if(argc <= 1)
+    {
+        printf("logfind needs at least one query term!\n");
+    }
+
     FILE* fstream = fopen(".logfind", "r");
     check_mem(fstream);
 
-    int lineCount = countlines(fstream);
+    int lineCount = CountLines(fstream);
     log_info("number of lines: %d", lineCount);
 
     char* line = malloc(LINEMAX);
@@ -120,6 +130,12 @@ int main(int argc, char* argv[])
     check_debug(rawLine, "rawLine note created");
 
     char* logFilePath = malloc(LINEMAX);
+
+    regex_t regex;
+    int reti;
+
+    reti = regcomp(&regex, argv[1], 0);
+    check_debug(!reti, "could not compile regex");
 
     while(fgets(line, LINEMAX, fstream ))
     {
@@ -133,14 +149,14 @@ int main(int argc, char* argv[])
             check_debug(logStream, "logStream not opened")
 
             printf("title: %s\n", logFilePath);
-            printFile(logStream);
+            PrintMatches(logStream, &regex);
 
             fclose(logStream);
             
             cnt++;
         }
     }
-    
+    regfree(&regex);
     free(rawLine);
     free(logFilePath);
     fclose(fstream);
