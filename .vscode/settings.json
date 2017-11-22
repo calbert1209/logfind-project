@@ -2,5 +2,6 @@
     "files.associations": {
         "errno.h": "c",
         "dbg.h": "c"
-    }
+    },
+    "C_Cpp.intelliSenseEngine": "Default"
 }
