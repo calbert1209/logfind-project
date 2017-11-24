@@ -109,11 +109,6 @@ int PrintMatches(FILE* stream, regex_t* regex)
     return 1;
 }
 
-// TODO FindAll
-// TODO FindAny
-// TODO ExecuteFind, finds terms in buffer using strategy based on flag parameter
-
-
 int main(int argc, char* argv[])
 {
     if(argc <= 1)
@@ -121,10 +116,6 @@ int main(int argc, char* argv[])
         printf("logfind needs at least one query term!\n");
     }
 
-    // TODO evaluate args for -o
-    // TODO get terms list for -o strategy
-
-    // === Load List of Logs
     FILE* fstream = fopen(".logfind", "r");
     check_mem(fstream);
 
@@ -140,29 +131,32 @@ int main(int argc, char* argv[])
 
     char* logFilePath = malloc(LINEMAX);
 
-    // === Loop through list of filepaths
+    regex_t regex;
+    int reti;
+
+    reti = regcomp(&regex, argv[1], 0);
+    check_debug(!reti, "could not compile regex");
+
     while(fgets(line, LINEMAX, fstream ))
     {
         if (CommentCheck(line) == 0 && BlankLineCheck(line) == 0)
         {
-            // == clean up filepath string            
             strcpy(rawLine, line);
 
             RemoveLineReturn(rawLine, logFilePath);
             
-            // == open file stream
             FILE* logStream = fopen(logFilePath, "r");
             check_debug(logStream, "logStream not opened")
 
-            // TODO convert filestream to buffer
-            // TODO pass buffer, terms, and strategy flag to ExecuteFind
-            // TODO record? report? results of search for filepath
+            printf("title: %s\n", logFilePath);
+            PrintMatches(logStream, &regex);
 
             fclose(logStream);
             
             cnt++;
         }
     }
+    regfree(&regex);
     free(rawLine);
     free(logFilePath);
     fclose(fstream);
